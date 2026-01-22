@@ -1,35 +1,38 @@
-# Normality and Variance Diagnostics Report
+# A Friendly Report on Normality, Variance, and What It Means for Causal Discovery
 
-This report summarizes why we run normality and variance checks, what the plots and tables mean, and what the results suggest for each dataset in `Check for the normality`. The summary values below come from `ALL_dataset_summary.csv`.
+This is a short blog-style report that explains **why** we check normality and variance, **what the plots mean**, and **how each dataset behaves**. The numbers below come from `ALL_dataset_summary.csv`, and the plots were generated into `Check for the normality/plots/`.
 
-## Why run these checks
+---
 
-Many causal discovery and SEM algorithms make assumptions about the data distribution:
-- **PC** and **NOTEARS** (linear-Gaussian variants) often work best when variables are close to Gaussian.
-- **LiNGAM** explicitly assumes **non-Gaussian** noise to identify causal directions.
-- **GraNDAG** is flexible for **nonlinear** relationships and can tolerate non-Gaussian data, but is heavier computationally.
+## Why we do this
 
-These checks help decide which algorithm is a better statistical match before you invest time in model fitting.
+Causal discovery algorithms often make assumptions about the data distribution.
 
-## What the tests and plots tell you
+- **PC** and **NOTEARS** (linear-Gaussian) usually work best when variables are close to Gaussian.
+- **LiNGAM** depends on **non-Gaussian noise** to recover directions.
+- **GraNDAG** is more flexible for **nonlinear** patterns, but heavier to train.
 
-We use multiple normality tests because each has different sensitivity:
-- **Shapiro-Wilk**: reliable for smaller samples (up to ~5k).
-- **D'Agostino K2** and **Jarque-Bera**: sensitive to skew/kurtosis in larger samples.
-- **Anderson-Darling**: emphasizes tail behavior.
+So before we run any model, we first check whether each dataset looks Gaussian or not. That gives us a practical, data-driven choice of method.
 
-The report table includes:
-- **Pass rates**: fraction of columns with p-value >= 0.05 (higher means more Gaussian-like).
-- **Mean absolute skew / kurtosis**: larger values mean stronger deviations from Gaussian.
+---
 
-Visualizations (if you generated them in the notebook):
-- **P-value histograms**: a flat distribution suggests normality; many values near 0 suggests non-normality.
-- **Skew vs kurtosis scatter**: points near (0,0) are close to Gaussian.
-- **QQ plots**: a straight line indicates normality; curves indicate skew or heavy tails.
+## Quick global view (all datasets together)
 
-## Dataset-level summary (from ALL_dataset_summary.csv)
+### Pass-rate overview (normality tests)
 
-Values are shown with 3 decimals where appropriate.
+This plot shows the fraction of columns that pass each normality test (p >= 0.05). Higher is more Gaussian-like.
+
+![Pass rates by dataset](plots/pass_rate_by_dataset.png)
+
+### Skew vs kurtosis (all columns)
+
+Points near (0, 0) are close to Gaussian. Large deviations mean heavy tails or skew.
+
+![Skew vs kurtosis scatter](plots/skew_kurtosis_scatter.png)
+
+---
+
+## Summary table (dataset level)
 
 | Dataset         | n_cols | Shapiro pass | K2 pass | JB pass | AD pass | mean |skew| | mean |kurt| |
 |----------------|--------|--------------|---------|---------|---------|-----------|-----------|
@@ -44,67 +47,111 @@ Values are shown with 3 decimals where appropriate.
 | MidDim-P_data  | 100    | 0.970        | 0.970   | 0.970   | 0.980   | 0.024     | 0.048     |
 | MidDim-S_data  | 100    | 0.920        | 0.940   | 0.940   | 0.920   | 0.582     | 27.523    |
 
-## Interpretation and suggested algorithm choice
+How to read this table:
+- **Pass rate** near 1.0 = many columns look Gaussian.
+- **Mean |skew|** and **mean |kurtosis|** large = strong non-Gaussian behavior.
 
-Notes:
-- Pass rates above ~0.9 with tiny skew/kurtosis are consistent with Gaussian data.
-- Large skew/kurtosis means strong non-normality.
-- These are **univariate** diagnostics; multivariate normality can still fail.
+---
+
+## Dataset-by-dataset notes (with plots)
+
+Each dataset below includes:
+- **p-value histograms** (Shapiro, K2, JB)
+- **QQ + histogram samples** (3 random columns)
+- A short practical recommendation
 
 ### HighDim-D_data
-- Very low pass rates and extremely high skew/kurtosis.
-- **Conclusion**: strongly non-Gaussian.
-- **Suggestion**: **LiNGAM** is more appropriate than PC/NOTEARS; GraNDAG if you expect nonlinear relationships.
+
+Strong non-Gaussian behavior (very low pass rates, extreme skew/kurtosis).
+- **Suggested**: LiNGAM or GraNDAG (if nonlinear).
+
+![HighDim-D p-values](plots/pvalues_HighDim-D_data.png)
+![HighDim-D QQ + hist](plots/qq_hist_HighDim-D_data.png)
 
 ### HighDim-S_data
-- Very high pass rates and near-zero skew/kurtosis.
-- **Conclusion**: close to Gaussian.
-- **Suggestion**: **PC** or **NOTEARS** (linear-Gaussian) should be a good fit.
+
+Very Gaussian-like (high pass rates, tiny skew/kurtosis).
+- **Suggested**: PC or NOTEARS.
+
+![HighDim-S p-values](plots/pvalues_HighDim-S_data.png)
+![HighDim-S QQ + hist](plots/qq_hist_HighDim-S_data.png)
 
 ### LowDim-D_data
-- High pass rates; low skew; moderate kurtosis.
-- **Conclusion**: mostly Gaussian, mild tails.
-- **Suggestion**: **PC/NOTEARS** likely fine; LiNGAM not required.
+
+Mostly Gaussian; mild tail behavior in some columns.
+- **Suggested**: PC/NOTEARS.
+
+![LowDim-D p-values](plots/pvalues_LowDim-D_data.png)
+![LowDim-D QQ + hist](plots/qq_hist_LowDim-D_data.png)
 
 ### LowDim-L_data
-- Excellent pass rates; very low skew/kurtosis.
-- **Conclusion**: Gaussian-like.
-- **Suggestion**: **PC/NOTEARS**.
+
+Very Gaussian-like.
+- **Suggested**: PC/NOTEARS.
+
+![LowDim-L p-values](plots/pvalues_LowDim-L_data.png)
+![LowDim-L QQ + hist](plots/qq_hist_LowDim-L_data.png)
 
 ### LowDim-N_data
-- High pass rates; low skew/kurtosis.
-- **Conclusion**: Gaussian-like.
-- **Suggestion**: **PC/NOTEARS**.
+
+Gaussian-like.
+- **Suggested**: PC/NOTEARS.
+
+![LowDim-N p-values](plots/pvalues_LowDim-N_data.png)
+![LowDim-N QQ + hist](plots/qq_hist_LowDim-N_data.png)
 
 ### LowDim-P_data
-- High pass rates; low skew/kurtosis.
-- **Conclusion**: Gaussian-like.
-- **Suggestion**: **PC/NOTEARS**.
+
+Gaussian-like.
+- **Suggested**: PC/NOTEARS.
+
+![LowDim-P p-values](plots/pvalues_LowDim-P_data.png)
+![LowDim-P QQ + hist](plots/qq_hist_LowDim-P_data.png)
 
 ### MidDim-C_data
-- High pass rates; low skew/kurtosis.
-- **Conclusion**: Gaussian-like.
-- **Suggestion**: **PC/NOTEARS**.
+
+Gaussian-like.
+- **Suggested**: PC/NOTEARS.
+
+![MidDim-C p-values](plots/pvalues_MidDim-C_data.png)
+![MidDim-C QQ + hist](plots/qq_hist_MidDim-C_data.png)
 
 ### MidDim-D_data
-- Lower pass rates; high skew/kurtosis.
-- **Conclusion**: non-Gaussian, heavy tails.
-- **Suggestion**: **LiNGAM** is more suitable; consider GraNDAG if nonlinearity is expected.
+
+Non-Gaussian, heavy tails (skew/kurtosis high, lower pass rates).
+- **Suggested**: LiNGAM; GraNDAG if nonlinear.
+
+![MidDim-D p-values](plots/pvalues_MidDim-D_data.png)
+![MidDim-D QQ + hist](plots/qq_hist_MidDim-D_data.png)
 
 ### MidDim-P_data
-- Very high pass rates; low skew/kurtosis.
-- **Conclusion**: Gaussian-like.
-- **Suggestion**: **PC/NOTEARS**.
+
+Gaussian-like.
+- **Suggested**: PC/NOTEARS.
+
+![MidDim-P p-values](plots/pvalues_MidDim-P_data.png)
+![MidDim-P QQ + hist](plots/qq_hist_MidDim-P_data.png)
 
 ### MidDim-S_data
-- Pass rates are high but skew/kurtosis are elevated.
-- **Conclusion**: mixed; some variables likely non-Gaussian.
-- **Suggestion**: PC/NOTEARS may still work, but **LiNGAM** could improve directionality if non-Gaussian noise is present.
 
-## Limitations and next steps
+Mixed: pass rates are high, but skew/kurtosis are elevated.
+- **Suggested**: PC/NOTEARS may still work, but LiNGAM can help if non-Gaussian noise is present.
 
-- These are univariate tests; multivariate normality may differ.
-- With many columns, p-values can show failures due to multiple testing.
-- Consider standardization and robust estimation if heavy tails persist.
+![MidDim-S p-values](plots/pvalues_MidDim-S_data.png)
+![MidDim-S QQ + hist](plots/qq_hist_MidDim-S_data.png)
 
-If you want, I can also generate a PDF or HTML report with plots embedded and add it to the repo.
+---
+
+## Limitations (quick honesty section)
+
+- These are **univariate** tests; multivariate normality can still fail.
+- Many columns means many tests; some failures are expected.
+- Always combine this with domain knowledge and downstream model checks.
+
+---
+
+## Files you can reuse
+
+- `ALL_dataset_summary.csv`: dataset-level summary.
+- `ALL_univariate_summary.csv`: column-level metrics.
+- `plots/`: all visualizations used in this report.
